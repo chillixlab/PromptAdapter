@@ -45,10 +45,11 @@ cd PromptAdapter
 mise install
 
 # 依存関係をインストール
-mise run init
+mise init
 ```
 
 `mise install` コマンドにより、以下がインストールされます：
+
 - Python 3.14
 - uv (最新版)
 
@@ -83,16 +84,16 @@ miseタスクを使用して以下のコマンドを実行できます：
 
 ```bash
 # 依存関係のインストール
-mise run init
+mise init
 
 # テストの実行
-mise run test
+mise test
 
 # リントチェック
-mise run lint
+mise lint
 
 # コードフォーマット
-mise run format
+mise format
 ```
 
 または、uvを直接使用することもできます：
@@ -112,9 +113,9 @@ uv run ruff format .
 ## 開発フロー
 
 1. 機能の開発またはバグ修正を行う
-2. コードをフォーマットする: `mise run format`
-3. リントチェックを実行する: `mise run lint`
-4. テストを実行する: `mise run test`
+2. コードをフォーマットする: `mise format`
+3. リントチェックを実行する: `mise lint`
+4. テストを実行する: `mise test`
 5. コミットしてプルリクエストを作成する
 
 ## ライセンス
