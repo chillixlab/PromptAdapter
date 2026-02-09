@@ -1,0 +1,47 @@
+name: Quality & Test
+
+# このワークフローは、PR作成やmainブランチへのpush時に
+# ruffによるフォーマットチェック・tyによる型チェック・pytestによるテストを
+# Python 3.14バージョンで実行します。
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  quality-test:
+    name: Quality & Test (lint, type, test)
+    runs-on: ubuntu-latest
+    # Pythonのバージョンごとに並列実行
+    strategy:
+      matrix:
+        python-version: ["3.14"]
+    steps:
+      - uses: actions/checkout@v4
+        # リポジトリのソースコードを取得
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+        # uvをインストールし、キャッシュも有効化
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+        # matrixで指定したPythonバージョンをセットアップ
+      - name: Install dependencies
+        # uvで依存パッケージをインストール（uv.lockを利用、dev依存も含む）
+        run: uv sync --locked --all-extras --dev
+      - name: Run ruff format check
+        # ruffでコードフォーマット・静的解析チェック
+        run: uv run ruff check .
+      - name: Run ty check
+        # tyで型チェック
+        run: uv run mypy .
+      - name: Run pytest
+        # pytestでユニットテストを実行
+        run: uv run pytest

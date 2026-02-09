@@ -1,0 +1,30 @@
+{
+    // ファイル保存・整形
+    "files.insertFinalNewline": true,
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.formatOnSaveMode": "file"
+    },
+
+    // 補完系
+    "autoDocstring.docstringFormat": "numpy",
+
+    // Linter・型チェック
+    "ruff.configuration": "${workspaceFolder}/pyproject.toml",
+    "mypy-type-checker.args": [
+        "--config=${workspaceFolder}/pyproject.toml",
+        "--ignore_missing_imports=true"
+    ],
+
+    // Python解析・テスト
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.testing.pytestEnabled": true,
+
+    // Copilot関連
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true
+}

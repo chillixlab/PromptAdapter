@@ -1,0 +1,23 @@
+[env]
+_.python.venv = { path = ".venv", create = true }
+_.file = ".env"
+
+[tools]
+python = "3.14"
+uv = "latest"
+
+[tasks.init]
+description = "Install dependencies"
+run = "uv sync --all-extras"
+
+[tasks.test]
+description = "Run tests"
+run = "uv run pytest tests"
+
+[tasks.lint]
+description = "Run linters"
+run = "uv run ruff check . && uv run ty check ."
+
+[tasks.format]
+description = "Format code"
+run = "uv run ruff format . "
