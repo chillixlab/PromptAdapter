@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "litellm>=1.81.9",
+    "pandas>=3.0.0",
+    "requests>=2.32.5",
 ]
 
 [dependency-groups]
