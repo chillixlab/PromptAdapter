@@ -1,8 +1,5 @@
 import litellm
-from config import Settings
-from evaluator.eval_models import EvalResult
 from langchain_openai import AzureOpenAIEmbeddings
-from logger import logger
 from pydantic import SecretStr
 from ragas import evaluate
 from ragas.embeddings import LangchainEmbeddingsWrapper
@@ -10,6 +7,9 @@ from ragas.llms import llm_factory
 from ragas.metrics import AnswerRelevancy, ContextPrecision, ContextRecall, Faithfulness
 
 from datasets import Dataset
+from prompt_adapter.config import Settings
+from prompt_adapter.evaluator.eval_models import EvalResult
+from prompt_adapter.logger import logger
 
 
 class Evaluator:
@@ -46,8 +46,8 @@ class Evaluator:
         langchain_embeddings = AzureOpenAIEmbeddings(
             model=self.settings.azure_embedding_deployment_name,
             azure_endpoint=self.settings.azure_openai_endpoint,
-            api_key=SecretStr(self.settings.azure_openai_api_key),
-            api_version=self.settings.azure_openai_api_version,
+            openai_api_key=SecretStr(self.settings.azure_openai_api_key),
+            openai_api_version=self.settings.azure_openai_api_version,
         )
 
         # RAGASのLangchainEmbeddingsWrapperでラップ
