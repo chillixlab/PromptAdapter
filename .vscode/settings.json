@@ -26,5 +26,6 @@
     "python.testing.pytestEnabled": true,
 
     // Copilot関連
-    "github.copilot.chat.codeGeneration.useInstructionFiles": true
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "explorer.compactFolders": false
 }
