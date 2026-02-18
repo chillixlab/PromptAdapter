@@ -12,7 +12,7 @@ class JaQuADPreparer:
         self.path_train = self.jaquad_base_url + "/train/"
         self.path_dev = self.jaquad_base_url + "/dev/"
 
-        self.output_folder = "instance/datasets/JaQuAD/"
+        self.output_folder = "../instance/datasets/JaQuAD/"
 
     def load_jaquad_all(self) -> None:
         logger.info(
@@ -29,8 +29,8 @@ class JaQuADPreparer:
                 logger.info(f"Processing {item['name']}")
                 df = pd.read_json(item["download_url"])
 
+                rows = []
                 for num in range(len(df)):
-                    rows = []
                     title = df.iloc[num]["data"]["title"]
 
                     for paragraph in df.iloc[num]["data"]["paragraphs"]:
@@ -40,9 +40,7 @@ class JaQuADPreparer:
                             question = qa["question"]
                             qid = qa["id"]
                             question_type = qa.get("question_type", "")
-
-                        # 複数answerがある場合は全部連結
-                        answers = qa["answers"]["text"]
+                            answers = qa["answers"][0]["text"]
 
                         rows.append(
                             {
@@ -57,7 +55,7 @@ class JaQuADPreparer:
 
                 qa_df = pd.DataFrame(rows)
 
-        # jsonファイル毎にcsvファイルを出力する
-        output_path = self.output_folder + item["name"].replace(".json", ".csv")
-        qa_df.to_csv(output_path, index=False)
-        logger.info(f"CSVファイルを {output_path} に保存しました。")
+                # jsonファイル毎にcsvファイルを出力する
+                output_path = self.output_folder + item["name"].replace(".json", ".csv")
+                qa_df.to_csv(output_path, index=False)
+                logger.info(f"CSVファイルを {output_path} に保存しました。")
