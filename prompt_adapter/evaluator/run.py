@@ -1,12 +1,13 @@
 import litellm
+from datasets import Dataset
 from langchain_openai import AzureOpenAIEmbeddings
 from pydantic import SecretStr
 from ragas import evaluate
+from ragas.dataset_schema import EvaluationResult
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import llm_factory
 from ragas.metrics import AnswerRelevancy, ContextPrecision, ContextRecall, Faithfulness
 
-from datasets import Dataset
 from prompt_adapter.config import Settings
 from prompt_adapter.evaluator.eval_models import EvalResult
 from prompt_adapter.logger import logger
@@ -80,6 +81,10 @@ class Evaluator:
 
         # 評価の実行
         results = evaluate(dataset, metrics=metrics)
+        if not isinstance(results, EvaluationResult):
+            raise ValueError(
+                "RAGASの評価結果がEvaluationResultのインスタンスではありません"
+            )
 
         # EvalResultモデルに変換
         eval_result = EvalResult.from_ragas_result(

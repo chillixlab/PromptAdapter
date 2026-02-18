@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from pydantic import BaseModel, Field
+from ragas.dataset_schema import EvaluationResult
 
 
 class EvalResult(BaseModel):
@@ -52,7 +53,7 @@ class EvalResult(BaseModel):
     @classmethod
     def from_ragas_result(
         cls,
-        ragas_result,
+        ragas_result: EvaluationResult,
         model_name: str,
         evaluation_model_name: str,
     ) -> "EvalResult":
