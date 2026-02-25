@@ -20,12 +20,11 @@ class JaQuADPreparer:
         # 出力フォルダが存在しない場合は作成
         os.makedirs(self.output_folder, exist_ok=True)
 
-        global_question_id = 1 
         for path in [self.path_train, self.path_dev]:
 
             response = requests.get(path)
             files = response.json()
-
+    
             for item in files:
                 if not item["name"].endswith(".json"):
                     continue
@@ -35,6 +34,7 @@ class JaQuADPreparer:
 
                 rows = []
                 context_id = 1
+                question_id = 1 
                 for num in range(len(df)):
                     title = df.iloc[num]["data"]["title"]
 
@@ -48,7 +48,7 @@ class JaQuADPreparer:
 
                             rows.append(
                                 {
-                                    "question_id": global_question_id,
+                                    "question_id": question_id,
                                     "context_id": context_id,
                                     "title": title,
                                     "context": context,
@@ -58,7 +58,7 @@ class JaQuADPreparer:
                                 }
                             )
 
-                            global_question_id += 1  # 質問IDを増加
+                            question_id += 1  # 質問IDを増加
                         context_id += 1  # コンテキストが変わったら増加
 
                 qa_df = pd.DataFrame(rows)
