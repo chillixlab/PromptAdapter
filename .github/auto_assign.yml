@@ -1,0 +1,8 @@
+addReviewers: true
+addAssignees: author
+
+reviewers:
+  - naofumi1014-ds
+  - rakuichi4817
+
+numberOfReviewers: 0
