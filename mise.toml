@@ -20,4 +20,4 @@ run = "uv run ruff check . && uv run ty check ."
 
 [tasks.format]
 description = "Format code"
-run = "uv run ruff format . "
+run = "uv run ruff check --fix . && uv run ruff format ."

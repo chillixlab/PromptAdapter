@@ -1,6 +1,8 @@
 import os
+
 import pandas as pd
 import requests
+
 from prompt_adapter.logger import logger
 
 
@@ -21,10 +23,9 @@ class JaQuADPreparer:
         os.makedirs(self.output_folder, exist_ok=True)
 
         for path in [self.path_train, self.path_dev]:
-
             response = requests.get(path)
             files = response.json()
-    
+
             for item in files:
                 if not item["name"].endswith(".json"):
                     continue
@@ -34,7 +35,7 @@ class JaQuADPreparer:
 
                 rows = []
                 context_id = 1
-                question_id = 1 
+                question_id = 1
                 for num in range(len(df)):
                     title = df.iloc[num]["data"]["title"]
 
@@ -63,10 +64,7 @@ class JaQuADPreparer:
 
                 qa_df = pd.DataFrame(rows)
 
-                output_path = (
-                    self.output_folder
-                    + item["name"].replace(".json", ".csv")
-                )
+                output_path = self.output_folder + item["name"].replace(".json", ".csv")
 
                 qa_df.to_csv(output_path, index=False)
                 logger.info(f"CSV保存: {output_path}")

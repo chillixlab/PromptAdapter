@@ -20,3 +20,11 @@ dev = [
     "ruff>=0.15.0",
     "ty>=0.0.15",
 ]
+
+[tool.ruff.lint]
+extend-select = [
+    "B",   # flake8-bugbear: 潜在的なバグを検出
+    "I",   # isort: import順の整形チェック
+    "SIM", # flake8-simplify: 冗長な書き方の簡略化
+    "UP",  # pyupgrade: 新しいPython構文への改善提案
+]
