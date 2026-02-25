@@ -1,6 +1,6 @@
+import os
 import pandas as pd
 import requests
-
 from prompt_adapter.logger import logger
 
 
@@ -11,25 +11,30 @@ class JaQuADPreparer:
         )
         self.path_train = self.jaquad_base_url + "/train/"
         self.path_dev = self.jaquad_base_url + "/dev/"
-
         self.output_folder = "../instance/datasets/JaQuAD/"
 
     def load_jaquad_all(self) -> None:
-        logger.info(
-            "JaQuADデータセットの全てのJsonファイルに対するCSV構築を開始します。"
-        )
-        response = requests.get(self.path_train)
-        files = response.json()
 
-        logger.info(files)
+        logger.info("JaQuADデータセットのCSV構築を開始します。")
 
-        for item in files:
-            if item["name"].endswith(".json"):
-                # jsonファイルをcsvに変換する
+        # 出力フォルダが存在しない場合は作成
+        os.makedirs(self.output_folder, exist_ok=True)
+
+        global_question_id = 1 
+        for path in [self.path_train, self.path_dev]:
+
+            response = requests.get(path)
+            files = response.json()
+
+            for item in files:
+                if not item["name"].endswith(".json"):
+                    continue
+
                 logger.info(f"Processing {item['name']}")
                 df = pd.read_json(item["download_url"])
 
                 rows = []
+                context_id = 1
                 for num in range(len(df)):
                     title = df.iloc[num]["data"]["title"]
 
@@ -38,24 +43,32 @@ class JaQuADPreparer:
 
                         for qa in paragraph["qas"]:
                             question = qa["question"]
-                            qid = qa["id"]
                             question_type = qa.get("question_type", "")
-                            answers = qa["answers"][0]["text"]
+                            answer = qa["answers"][0]["text"]
 
-                        rows.append(
-                            {
-                                "question_id": qid,
-                                "title": title,
-                                "context": context,
-                                "question": question,
-                                "answer": answers,
-                                "question_type": question_type,
-                            }
-                        )
+                            rows.append(
+                                {
+                                    "question_id": global_question_id,
+                                    "context_id": context_id,
+                                    "title": title,
+                                    "context": context,
+                                    "question": question,
+                                    "answer": answer,
+                                    "question_type": question_type,
+                                }
+                            )
+
+                            global_question_id += 1  # 質問IDを増加
+                        context_id += 1  # コンテキストが変わったら増加
 
                 qa_df = pd.DataFrame(rows)
 
-                # jsonファイル毎にcsvファイルを出力する
-                output_path = self.output_folder + item["name"].replace(".json", ".csv")
+                output_path = (
+                    self.output_folder
+                    + item["name"].replace(".json", ".csv")
+                )
+
                 qa_df.to_csv(output_path, index=False)
-                logger.info(f"CSVファイルを {output_path} に保存しました。")
+                logger.info(f"CSV保存: {output_path}")
+
+        logger.info("CSV構築が完了しました。")
