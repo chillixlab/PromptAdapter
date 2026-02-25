@@ -38,10 +38,10 @@ jobs:
         run: uv sync --locked --all-extras --dev
       - name: Run ruff format check
         # ruffでコードフォーマット・静的解析チェック
-        run: uv run ruff check .
+        run: uv run ruff check prompt_adapter scripts tests
       - name: Run ty check
         # tyで型チェック
-        run: uv run ty check prompt_adapter
+        run: uv run ty check prompt_adapter scripts tests
       - name: Run pytest
         # pytestでユニットテストを実行
         run: uv run pytest
