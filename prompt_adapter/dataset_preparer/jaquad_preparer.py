@@ -13,14 +13,12 @@ class JaQuADPreparer:
         )
         self.path_train = self.jaquad_base_url + "/train/"
         self.path_dev = self.jaquad_base_url + "/dev/"
-        self.output_folder = "../instance/datasets/JaQuAD/"
 
-    def load_jaquad_all(self) -> None:
-
+    def load_jaquad_all(self, output_folder: str) -> None:
         logger.info("JaQuADデータセットのCSV構築を開始します。")
 
         # 出力フォルダが存在しない場合は作成
-        os.makedirs(self.output_folder, exist_ok=True)
+        os.makedirs(output_folder, exist_ok=True)
 
         for path in [self.path_train, self.path_dev]:
             response = requests.get(path)
@@ -64,9 +62,9 @@ class JaQuADPreparer:
 
                 qa_df = pd.DataFrame(rows)
 
-                output_path = self.output_folder + item["name"].replace(".json", ".csv")
+                output_path = os.path.join(output_folder, item["name"].replace(".json", ".csv"))
 
                 qa_df.to_csv(output_path, index=False)
                 logger.info(f"CSV保存: {output_path}")
 
-        logger.info("CSV構築が完了しました。")
+        logger.info("JaQuADデータセットのCSV構築が完了しました。")
