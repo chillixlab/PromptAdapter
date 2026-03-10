@@ -5,8 +5,8 @@ from typing import NamedTuple
 
 from prompt_adapter.evaluator.eval_models import (
     ExactMatchEvaluationMethod,
-    JaQuADExecutionResult,
     JaQuADExactMatchEvalResult,
+    JaQuADExecutionResult,
     ModelExactMatchMetric,
 )
 
