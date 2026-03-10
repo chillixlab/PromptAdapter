@@ -1,0 +1,144 @@
+{
+  "dataset_name": "JaQuAD",
+  "dataset_split": "dev",
+  "source_file": "jaquad_dev_0000.csv",
+  "generated_at": "2026-03-10T00:00:00+09:00",
+  "models": [
+    "gpt-4o-mini",
+    "gpt-4.1",
+    "gemini-2.0-flash",
+    "claude-3-5-sonnet"
+  ],
+  "records": [
+    {
+      "question_id": 1,
+      "context_id": 1,
+      "title": "東大寺の仏像",
+      "question_type": "Syntactic variation",
+      "question": "8世紀に日本の首都はどこでしたか。",
+      "ground_truth_answer": "奈良",
+      "llm_answers": {
+        "gpt-4o-mini": {
+          "answer": "奈良",
+          "is_exact_match": true
+        },
+        "gpt-4.1": {
+          "answer": "奈良",
+          "is_exact_match": true
+        },
+        "gemini-2.0-flash": {
+          "answer": "奈良県奈良市",
+          "is_exact_match": false
+        },
+        "claude-3-5-sonnet": {
+          "answer": "奈良",
+          "is_exact_match": true
+        }
+      }
+    },
+    {
+      "question_id": 2,
+      "context_id": 1,
+      "title": "東大寺の仏像",
+      "question_type": "Syntactic variation",
+      "question": "「奈良の大仏」の高さは何メートルなの?",
+      "ground_truth_answer": "約15メートル",
+      "llm_answers": {
+        "gpt-4o-mini": {
+          "answer": "約15メートル",
+          "is_exact_match": true
+        },
+        "gpt-4.1": {
+          "answer": "15メートル",
+          "is_exact_match": false
+        },
+        "gemini-2.0-flash": {
+          "answer": "約15メートル",
+          "is_exact_match": true
+        },
+        "claude-3-5-sonnet": {
+          "answer": "高さ約15メートル",
+          "is_exact_match": false
+        }
+      }
+    },
+    {
+      "question_id": 3,
+      "context_id": 2,
+      "title": "東大寺の仏像",
+      "question_type": "Syntactic variation",
+      "question": "盧舎那仏像は誰の発願で造立されたの?",
+      "ground_truth_answer": "聖武天皇",
+      "llm_answers": {
+        "gpt-4o-mini": {
+          "answer": "聖武天皇",
+          "is_exact_match": true
+        },
+        "gpt-4.1": {
+          "answer": "聖武天皇",
+          "is_exact_match": true
+        },
+        "gemini-2.0-flash": {
+          "answer": "聖武天皇",
+          "is_exact_match": true
+        },
+        "claude-3-5-sonnet": {
+          "answer": "聖武天皇",
+          "is_exact_match": true
+        }
+      }
+    },
+    {
+      "question_id": 4,
+      "context_id": 2,
+      "title": "東大寺の仏像",
+      "question_type": "Syntactic variation",
+      "question": "「盧舎那仏造立の詔」はいつ発されたか。",
+      "ground_truth_answer": "天平15年10月15日",
+      "llm_answers": {
+        "gpt-4o-mini": {
+          "answer": "天平15年10月15日",
+          "is_exact_match": true
+        },
+        "gpt-4.1": {
+          "answer": "天平15年10月15日",
+          "is_exact_match": true
+        },
+        "gemini-2.0-flash": {
+          "answer": "天平15年",
+          "is_exact_match": false
+        },
+        "claude-3-5-sonnet": {
+          "answer": "天平15年10月15日",
+          "is_exact_match": true
+        }
+      }
+    },
+    {
+      "question_id": 5,
+      "context_id": 2,
+      "title": "東大寺の仏像",
+      "question_type": "Syntactic variation",
+      "question": "大仏開眼供養が行われたのはいつでしたか。",
+      "ground_truth_answer": "天平勝宝4年4月9日",
+      "llm_answers": {
+        "gpt-4o-mini": {
+          "answer": "天平勝宝4年4月9日",
+          "is_exact_match": true
+        },
+        "gpt-4.1": {
+          "answer": "天平勝宝4年4月9日",
+          "is_exact_match": true
+        },
+        "gemini-2.0-flash": {
+          "answer": "天平勝宝4年4月9日",
+          "is_exact_match": true
+        },
+        "claude-3-5-sonnet": {
+          "answer": "752年4月9日",
+          "is_exact_match": false
+        }
+      }
+    }
+  ]
+}
