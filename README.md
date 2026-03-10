@@ -68,10 +68,12 @@ AZURE_API_BASE=https://your-resource.openai.azure.com/
 ```
 PromptAdapter/
 ├── prompt-adapter/          # メインのパッケージディレクトリ
-│   └── ai_model_runnner/    # AIモデル実行関連のモジュール
-│       ├── ai_models.py     # AIモデルの設定とプロバイダー定義
-│       ├── loader.py        # モデルローダー
-│       └── run.py           # モデル実行ロジック
+│   └── ai_model_runner/     # AIモデル実行関連のモジュール
+│       ├── domain.py        # ドメインモデル
+│       ├── repositories.py  # CSVリポジトリとCSVスキーマ
+│       ├── builder.py       # LiteLLMリクエスト組み立て
+│       ├── catalog.py       # モデル別名から設定解決
+│       └── runner.py        # モデル実行ロジック
 ├── tests/                   # テストディレクトリ
 ├── mise.toml               # mise設定ファイル（ツールバージョン管理）
 ├── pyproject.toml          # Pythonプロジェクト設定
