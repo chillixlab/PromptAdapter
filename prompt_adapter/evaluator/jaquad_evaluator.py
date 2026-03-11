@@ -5,8 +5,8 @@ from pathlib import Path
 
 from prompt_adapter.evaluator.eval_models import (
     JaQuADDatasetRecord,
-    JaQuADEvaluationMetricResult,
     JaQuADEvaluationResult,
+    JaQuADExactMatchMetricResult,
     JaQuADLLMResultRecord,
 )
 
@@ -103,7 +103,7 @@ class JaQuADEvaluator:
             generated_at=datetime.now().astimezone(),
             total_questions=total_questions,
             metrics={
-                "exact_match": JaQuADEvaluationMetricResult(
+                "exact_match": JaQuADExactMatchMetricResult(
                     score=score,
                     correct_count=correct_count,
                     incorrect_count=incorrect_count,
@@ -196,6 +196,7 @@ class JaQuADEvaluator:
                     question_id=int(row["question_id"]),
                     context_id=int(row["context_id"]),
                     answer=row["answer"],
+                    system_prompt=row["system_prompt"],
                 )
                 for row in reader
             ]

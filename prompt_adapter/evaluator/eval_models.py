@@ -121,10 +121,14 @@ class JaQuADLLMResultRecord(BaseModel):
         str,
         Field(title="モデル回答", description="LLM が生成した回答文字列"),
     ]
+    system_prompt: Annotated[
+        str,
+        Field(title="システムプロンプト", description="回答生成時に使用したシステムプロンプト",),
+    ]
 
 
-class JaQuADEvaluationMetricResult(BaseModel):
-    """JaQuAD の評価指標結果を表すデータモデル"""
+class JaQuADExactMatchMetricResult(BaseModel):
+    """JaQuAD の完全一致評価結果を表すデータモデル"""
 
     score: Annotated[
         float,
@@ -172,6 +176,6 @@ class JaQuADEvaluationResult(BaseModel):
         Field(title="総質問数", description="評価対象となった質問数"),
     ]
     metrics: Annotated[
-        dict[str, JaQuADEvaluationMetricResult],
+        dict[str, JaQuADExactMatchMetricResult],
         Field(title="評価指標結果", description="評価指標名をキーにした評価結果一覧"),
     ]
