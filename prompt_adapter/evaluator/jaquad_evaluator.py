@@ -1,23 +1,14 @@
+import csv
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import NamedTuple
 
 from prompt_adapter.evaluator.eval_models import (
-    ExactMatchEvaluationMethod,
-    JaQuADExactMatchEvalResult,
-    JaQuADExecutionResult,
-    ModelExactMatchMetric,
+    JaQuADDatasetRecord,
+    JaQuADEvaluationMetricResult,
+    JaQuADEvaluationResult,
+    JaQuADLLMResultRecord,
 )
-
-
-class _ModelExactMatchStat(NamedTuple):
-    """完全一致評価の途中集計を保持する。"""
-
-    correct_count: int
-    incorrect_count: int
-    matched_question_ids: list[int]
-    mismatched_question_ids: list[int]
 
 
 class JaQuADEvaluator:
@@ -25,127 +16,140 @@ class JaQuADEvaluator:
 
     def evaluate_exact_match(
         self,
-        execution_result: JaQuADExecutionResult,
-        source_result_file: str,
-    ) -> JaQuADExactMatchEvalResult:
+        dataset_name: str,
+        dataset_split: str,
+        source_dataset_file: str,
+        source_llm_result_file: str,
+        model_name: str,
+        dataset_records: list[JaQuADDatasetRecord],
+        llm_result_records: list[JaQuADLLMResultRecord],
+    ) -> JaQuADEvaluationResult:
         """
-        JaQuAD の実行結果に対して完全一致評価を行う。
+        JaQuAD の単一モデル生成結果に対して完全一致評価を行う。
 
         Parameters
         ----------
-        execution_result : JaQuADExecutionResult
-            複数モデルの回答結果を含む実行結果
-        source_result_file : str
-            評価元になった実行結果 JSON ファイル名
+        dataset_name : str
+            評価対象データセット名。
+        dataset_split : str
+            評価対象データの split 名。
+        source_dataset_file : str
+            評価元のデータセット CSV ファイル名。
+        source_llm_result_file : str
+            評価元の生成結果 CSV ファイル名。
+        model_name : str
+            評価対象のモデル名。
+        dataset_records : list[JaQuADDatasetRecord]
+            正解データ一覧。
+        llm_result_records : list[JaQuADLLMResultRecord]
+            モデル生成結果一覧。
 
         Returns
         -------
-        JaQuADExactMatchEvalResult
-            モデル単位の完全一致評価結果
+        JaQuADEvaluationResult
+            単一モデルの評価結果。
         """
-        total_questions = len(execution_result.records)
-        if total_questions == 0:
-            raise ValueError("JaQuAD の評価対象レコードが存在しません")
+        if not dataset_records:
+            raise ValueError("JaQuAD の評価対象データセットが存在しません")
 
-        model_stats: dict[str, _ModelExactMatchStat] = {
-            model_name: _ModelExactMatchStat(
-                correct_count=0,
-                incorrect_count=0,
-                matched_question_ids=[],
-                mismatched_question_ids=[],
-            )
-            for model_name in execution_result.models
+        dataset_record_map = {
+            (record.question_id, record.context_id): record for record in dataset_records
+        }
+        llm_result_record_map = {
+            (record.question_id, record.context_id): record for record in llm_result_records
         }
 
-        for record in execution_result.records:
-            normalized_ground_truth_answer = self._normalize_answer(
-                record.ground_truth_answer
-            )
+        if len(dataset_record_map) != len(dataset_records):
+            raise ValueError("データセット CSV に重複した question_id と context_id の組み合わせがあります")
 
-            for model_name in execution_result.models:
-                llm_answer = record.llm_answers.get(model_name)
-                model_answer = "" if llm_answer is None else llm_answer.answer
-                is_exact_match = (
-                    self._normalize_answer(model_answer) == normalized_ground_truth_answer
+        if len(llm_result_record_map) != len(llm_result_records):
+            raise ValueError("生成結果 CSV に重複した question_id と context_id の組み合わせがあります")
+
+        correct_count = 0
+        incorrect_count = 0
+
+        for record_key, dataset_record in dataset_record_map.items():
+            llm_record = llm_result_record_map.get(record_key)
+            if llm_record is None:
+                raise ValueError(
+                    "生成結果 CSV に対応する question_id と context_id の組み合わせが存在しません"
                 )
-                current_stat = model_stats[model_name]
 
-                if is_exact_match:
-                    current_stat.matched_question_ids.append(record.question_id)
-                    model_stats[model_name] = _ModelExactMatchStat(
-                        correct_count=current_stat.correct_count + 1,
-                        incorrect_count=current_stat.incorrect_count,
-                        matched_question_ids=current_stat.matched_question_ids,
-                        mismatched_question_ids=current_stat.mismatched_question_ids,
-                    )
-                else:
-                    current_stat.mismatched_question_ids.append(record.question_id)
-                    model_stats[model_name] = _ModelExactMatchStat(
-                        correct_count=current_stat.correct_count,
-                        incorrect_count=current_stat.incorrect_count + 1,
-                        matched_question_ids=current_stat.matched_question_ids,
-                        mismatched_question_ids=current_stat.mismatched_question_ids,
-                    )
-
-        model_metrics = [
-            ModelExactMatchMetric(
-                model_name=model_name,
-                correct_count=model_stats[model_name].correct_count,
-                incorrect_count=model_stats[model_name].incorrect_count,
-                exact_match_accuracy=(
-                    model_stats[model_name].correct_count / total_questions
-                ),
-                matched_question_ids=model_stats[model_name].matched_question_ids,
-                mismatched_question_ids=model_stats[
-                    model_name
-                ].mismatched_question_ids,
+            # 正規化して想定回答とあっているかを確認する
+            is_exact_match = (
+                self._normalize_answer(llm_record.answer)
+                == self._normalize_answer(dataset_record.answer)
             )
-            for model_name in execution_result.models
-        ]
+            if is_exact_match:
+                correct_count += 1
+            else:
+                incorrect_count += 1
 
-        return JaQuADExactMatchEvalResult(
-            dataset_name=execution_result.dataset_name,
-            dataset_split=execution_result.dataset_split,
-            source_file=execution_result.source_file,
-            source_result_file=source_result_file,
+        extra_record_keys = set(llm_result_record_map) - set(dataset_record_map)
+        if extra_record_keys:
+            raise ValueError(
+                "生成結果 CSV にデータセット CSV に存在しない question_id と context_id の組み合わせがあります"
+            )
+
+        total_questions = len(dataset_records)
+        score = correct_count / total_questions
+
+        return JaQuADEvaluationResult(
+            dataset_name=dataset_name,
+            dataset_split=dataset_split,
+            source_dataset_file=source_dataset_file,
+            source_llm_result_file=source_llm_result_file,
+            model_name=model_name,
             generated_at=datetime.now().astimezone(),
-            evaluation_method=ExactMatchEvaluationMethod(
-                name="完全一致",
-                description="各モデルの回答文字列が ground_truth_answer と完全一致した件数と正解率を集計",
-            ),
             total_questions=total_questions,
-            model_metrics=model_metrics,
+            metrics={
+                "exact_match": JaQuADEvaluationMetricResult(
+                    score=score,
+                    correct_count=correct_count,
+                    incorrect_count=incorrect_count,
+                )
+            },
         )
 
     def evaluate_exact_match_from_file(
         self,
-        result_file_path: str | Path,
-    ) -> JaQuADExactMatchEvalResult:
+        dataset_file_path: str | Path,
+        llm_result_file_path: str | Path,
+    ) -> JaQuADEvaluationResult:
         """
-        JaQuAD の実行結果 JSON を読み込み、完全一致評価を行う。
+        データセット CSV と生成結果 CSV を読み込み、完全一致評価を行う。
 
         Parameters
         ----------
-        result_file_path : str | Path
-            評価対象の実行結果 JSON パス
+        dataset_file_path : str | Path
+            評価対象のデータセット CSV パス。
+        llm_result_file_path : str | Path
+            評価対象の生成結果 CSV パス。
 
         Returns
         -------
-        JaQuADExactMatchEvalResult
-            モデル単位の完全一致評価結果
+        JaQuADEvaluationResult
+            単一モデルの評価結果。
         """
-        path = Path(result_file_path)
-        with path.open(encoding="utf-8") as file:
-            execution_result = JaQuADExecutionResult.model_validate(json.load(file))
+        dataset_path = Path(dataset_file_path)
+        llm_result_path = Path(llm_result_file_path)
+
+        dataset_records = self._load_dataset_records(dataset_path)
+        llm_result_records = self._load_llm_result_records(llm_result_path)
 
         return self.evaluate_exact_match(
-            execution_result=execution_result,
-            source_result_file=path.name,
+            dataset_name="JaQuAD",
+            dataset_split=self._extract_dataset_split(dataset_path.name),
+            source_dataset_file=dataset_path.name,
+            source_llm_result_file=llm_result_path.name,
+            model_name=self._extract_model_name(llm_result_path.name),
+            dataset_records=dataset_records,
+            llm_result_records=llm_result_records,
         )
 
     def save_exact_match_evaluation(
         self,
-        evaluation_result: JaQuADExactMatchEvalResult,
+        evaluation_result: JaQuADEvaluationResult,
         output_file_path: str | Path,
     ) -> None:
         """
@@ -153,10 +157,10 @@ class JaQuADEvaluator:
 
         Parameters
         ----------
-        evaluation_result : JaQuADExactMatchEvalResult
-            保存対象の完全一致評価結果
+        evaluation_result : JaQuADEvaluationResult
+            保存対象の評価結果。
         output_file_path : str | Path
-            出力先の JSON ファイルパス
+            出力先の JSON ファイルパス。
         """
         path = Path(output_file_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -167,6 +171,50 @@ class JaQuADEvaluator:
                 ensure_ascii=False,
                 indent=2,
             )
+
+    @staticmethod
+    def _load_dataset_records(file_path: Path) -> list[JaQuADDatasetRecord]:
+        """データセット CSV を読み込む。"""
+        with file_path.open(encoding="utf-8", newline="") as file:
+            reader = csv.DictReader(file)
+            return [
+                JaQuADDatasetRecord(
+                    question_id=int(row["question_id"]),
+                    context_id=int(row["context_id"]),
+                    answer=row["answer"],
+                )
+                for row in reader
+            ]
+
+    @staticmethod
+    def _load_llm_result_records(file_path: Path) -> list[JaQuADLLMResultRecord]:
+        """生成結果 CSV を読み込む。"""
+        with file_path.open(encoding="utf-8", newline="") as file:
+            reader = csv.DictReader(file)
+            return [
+                JaQuADLLMResultRecord(
+                    question_id=int(row["question_id"]),
+                    context_id=int(row["context_id"]),
+                    answer=row["answer"],
+                )
+                for row in reader
+            ]
+
+    @staticmethod
+    def _extract_dataset_split(dataset_file_name: str) -> str:
+        """データセットファイル名から split 名を抽出する。"""
+        file_stem_parts = Path(dataset_file_name).stem.split("_")
+        if len(file_stem_parts) < 3:
+            raise ValueError("データセット CSV ファイル名から split を判定できません")
+        return file_stem_parts[1]
+
+    @staticmethod
+    def _extract_model_name(llm_result_file_name: str) -> str:
+        """生成結果ファイル名からモデル名を抽出する。"""
+        file_stem_parts = Path(llm_result_file_name).stem.split("_")
+        if len(file_stem_parts) < 6:
+            raise ValueError("生成結果 CSV ファイル名からモデル名を判定できません")
+        return "_".join(file_stem_parts[5:])
 
     @staticmethod
     def _normalize_answer(answer: str) -> str:
