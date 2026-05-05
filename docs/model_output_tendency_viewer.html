@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>モデル出力比較ビューア</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            body: ["Zen Kaku Gothic New", "M PLUS 1p", "sans-serif"],
+          },
+          colors: {
+            brand: {
+              50: "#f2fbfa",
+              100: "#d6f4f1",
+              500: "#0f766e",
+              700: "#115e59",
+              900: "#134e4a"
+            }
+          },
+          keyframes: {
+            riseIn: {
+              "0%": { opacity: "0", transform: "translateY(10px)" },
+              "100%": { opacity: "1", transform: "translateY(0)" }
+            }
+          },
+          animation: {
+            riseIn: "riseIn 0.45s ease-out"
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="font-body min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-amber-50 text-slate-800">
+  <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <header class="animate-riseIn rounded-2xl border border-white/70 bg-white/70 p-6 shadow-lg backdrop-blur">
+      <p class="text-xs font-semibold tracking-[0.2em] text-brand-700">PROMPTADAPTER VIEWER</p>
+      <h1 class="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">モデル出力比較ビューア</h1>
+      <p class="mt-3 text-sm leading-relaxed text-slate-600">
+        質問CSVとモデル別結果CSVを読み込み、質問ごとに出力差分を一覧で確認できます。
+      </p>
+    </header>
+
+    <section class="mt-6 grid gap-4 lg:grid-cols-2">
+      <div class="animate-riseIn rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <label class="text-sm font-semibold text-slate-900">質問CSV</label>
+        <p class="mt-1 text-xs text-slate-500">例: model_output_tendency_questions.csv</p>
+        <input id="questionsFile" type="file" accept=".csv" class="mt-3 block w-full cursor-pointer rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-500 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-700">
+      </div>
+
+      <div class="animate-riseIn rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" style="animation-delay: 80ms;">
+        <label class="text-sm font-semibold text-slate-900">モデル出力CSV（複数選択可）</label>
+        <p class="mt-1 text-xs text-slate-500">例: model_output_tendency_credit_gpt-5.4_mini.csv など</p>
+        <input id="modelFiles" type="file" accept=".csv" multiple class="mt-3 block w-full cursor-pointer rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-500 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-700">
+      </div>
+    </section>
+
+    <section class="mt-6 animate-riseIn rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" style="animation-delay: 120ms;">
+      <div class="grid gap-4 lg:grid-cols-3">
+        <div>
+          <label for="searchInput" class="text-sm font-semibold text-slate-900">検索</label>
+          <input id="searchInput" type="text" placeholder="質問内容・回答で検索" class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100">
+        </div>
+        <div>
+          <label for="categoryFilter" class="text-sm font-semibold text-slate-900">カテゴリ</label>
+          <select id="categoryFilter" class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100">
+            <option value="">すべて</option>
+          </select>
+        </div>
+        <div class="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <p id="statusText">CSVを読み込むとここに件数を表示します。</p>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <p class="text-sm font-semibold text-slate-900">表示モデル</p>
+        <div id="modelToggles" class="mt-2 flex flex-wrap gap-2"></div>
+      </div>
+    </section>
+
+    <section class="mt-6 animate-riseIn rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" style="animation-delay: 160ms;">
+      <div class="overflow-x-auto">
+        <table class="min-w-full border-separate border-spacing-0 text-sm">
+          <thead>
+            <tr id="tableHead" class="bg-slate-100 text-slate-700"></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      questions: [],
+      models: new Map(),
+      visibleModels: new Set(),
+      categories: [],
+    };
+
+    const questionsFileInput = document.getElementById("questionsFile");
+    const modelFilesInput = document.getElementById("modelFiles");
+    const searchInput = document.getElementById("searchInput");
+    const categoryFilter = document.getElementById("categoryFilter");
+    const modelToggles = document.getElementById("modelToggles");
+    const statusText = document.getElementById("statusText");
+    const tableHead = document.getElementById("tableHead");
+    const tableBody = document.getElementById("tableBody");
+
+    function parseCsvFile(file) {
+      return new Promise((resolve, reject) => {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (result) => {
+            if (result.errors.length > 0) {
+              reject(new Error(result.errors[0].message));
+              return;
+            }
+            resolve(result.data);
+          },
+          error: (error) => reject(error),
+        });
+      });
+    }
+
+    function normalizeModelName(fileName) {
+      return fileName
+        .replace(/^model_output_tendency_/, "")
+        .replace(/\.csv$/i, "");
+    }
+
+    function normalizeQuestionRows(rows) {
+      return rows
+        .map((row) => ({
+          question_id: (row.question_id || row.quetion_id || "").trim(),
+          質問内容: (row.質問内容 || "").trim(),
+          カテゴリ: (row.カテゴリ || "").trim(),
+          確認する傾向: (row.確認する傾向 || "").trim(),
+          難易度: (row.難易度 || "").trim(),
+          質問タイプ: (row.質問タイプ || "").trim(),
+        }))
+        .filter((row) => row.question_id !== "" && row.質問内容 !== "");
+    }
+
+    function normalizeModelRows(rows) {
+      const map = new Map();
+      rows.forEach((row) => {
+        const questionId = (row.question_id || row.quetion_id || "").trim();
+        if (questionId === "") {
+          return;
+        }
+        map.set(questionId, (row.回答 || "").trim());
+      });
+      return map;
+    }
+
+    function updateCategoryFilter() {
+      const current = categoryFilter.value;
+      categoryFilter.innerHTML = '<option value="">すべて</option>';
+      state.categories.forEach((category) => {
+        const option = document.createElement("option");
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+      });
+      if (state.categories.includes(current)) {
+        categoryFilter.value = current;
+      }
+    }
+
+    function updateModelToggles() {
+      modelToggles.innerHTML = "";
+      const names = Array.from(state.models.keys());
+      if (names.length === 0) {
+        const empty = document.createElement("span");
+        empty.className = "text-xs text-slate-500";
+        empty.textContent = "モデルCSVを読み込むと選択できます。";
+        modelToggles.appendChild(empty);
+        return;
+      }
+
+      names.forEach((name) => {
+        const label = document.createElement("label");
+        label.className = "inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = state.visibleModels.has(name);
+        checkbox.className = "h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-500";
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) {
+            state.visibleModels.add(name);
+          } else {
+            state.visibleModels.delete(name);
+          }
+          renderTable();
+        });
+
+        const text = document.createElement("span");
+        text.textContent = name;
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        modelToggles.appendChild(label);
+      });
+    }
+
+    function getFilteredRows() {
+      const searchKeyword = searchInput.value.trim().toLowerCase();
+      const selectedCategory = categoryFilter.value;
+      const visibleModelNames = Array.from(state.visibleModels);
+
+      return state.questions.filter((question) => {
+        if (selectedCategory !== "" && question.カテゴリ !== selectedCategory) {
+          return false;
+        }
+
+        if (searchKeyword === "") {
+          return true;
+        }
+
+        const baseText = [
+          question.question_id,
+          question.質問内容,
+          question.カテゴリ,
+          question.確認する傾向,
+          question.難易度,
+          question.質問タイプ,
+        ].join(" ").toLowerCase();
+
+        if (baseText.includes(searchKeyword)) {
+          return true;
+        }
+
+        return visibleModelNames.some((modelName) => {
+          const answer = state.models.get(modelName)?.get(question.question_id) || "";
+          return answer.toLowerCase().includes(searchKeyword);
+        });
+      });
+    }
+
+    function renderTable() {
+      const visibleModelNames = Array.from(state.visibleModels);
+      const filteredRows = getFilteredRows();
+
+      const headColumns = ["質問ID", "質問内容", "カテゴリ", "確認する傾向", "難易度", "質問タイプ", ...visibleModelNames];
+      tableHead.innerHTML = "";
+      headColumns.forEach((column, index) => {
+        const th = document.createElement("th");
+        th.className = "sticky top-0 z-10 border-b border-slate-200 bg-slate-100 px-3 py-2 text-left font-semibold";
+        if (index < 2) {
+          th.className += " min-w-[140px]";
+        } else if (index < 6) {
+          th.className += " min-w-[110px]";
+        } else {
+          th.className += " min-w-[320px]";
+        }
+        th.textContent = column;
+        tableHead.appendChild(th);
+      });
+
+      tableBody.innerHTML = "";
+      filteredRows.forEach((question, rowIndex) => {
+        const tr = document.createElement("tr");
+        tr.className = rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/60";
+
+        const baseCells = [
+          question.question_id,
+          question.質問内容,
+          question.カテゴリ,
+          question.確認する傾向,
+          question.難易度,
+          question.質問タイプ,
+        ];
+        baseCells.forEach((value, index) => {
+          const td = document.createElement("td");
+          td.className = "border-b border-slate-200 px-3 py-2 align-top";
+          if (index === 1) {
+            td.className += " whitespace-pre-wrap";
+          }
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+
+        visibleModelNames.forEach((modelName) => {
+          const td = document.createElement("td");
+          td.className = "border-b border-slate-200 px-3 py-2 align-top whitespace-pre-wrap leading-relaxed";
+          td.textContent = state.models.get(modelName)?.get(question.question_id) || "";
+          tr.appendChild(td);
+        });
+
+        tableBody.appendChild(tr);
+      });
+
+      statusText.textContent = `質問 ${state.questions.length} 件 / 表示 ${filteredRows.length} 件 / モデル ${state.models.size} 件`;
+    }
+
+    async function loadQuestions() {
+      const file = questionsFileInput.files[0];
+      if (!file) {
+        return;
+      }
+
+      const rows = await parseCsvFile(file);
+      state.questions = normalizeQuestionRows(rows);
+      state.categories = Array.from(new Set(state.questions.map((row) => row.カテゴリ).filter((value) => value !== ""))).sort();
+      updateCategoryFilter();
+      renderTable();
+    }
+
+    async function loadModels() {
+      const files = Array.from(modelFilesInput.files);
+      if (files.length === 0) {
+        return;
+      }
+
+      state.models.clear();
+      state.visibleModels.clear();
+
+      for (const file of files) {
+        const rows = await parseCsvFile(file);
+        const modelName = normalizeModelName(file.name);
+        state.models.set(modelName, normalizeModelRows(rows));
+        state.visibleModels.add(modelName);
+      }
+
+      updateModelToggles();
+      renderTable();
+    }
+
+    questionsFileInput.addEventListener("change", async () => {
+      try {
+        await loadQuestions();
+      } catch (error) {
+        statusText.textContent = `質問CSVの読み込みに失敗しました: ${error.message}`;
+      }
+    });
+
+    modelFilesInput.addEventListener("change", async () => {
+      try {
+        await loadModels();
+      } catch (error) {
+        statusText.textContent = `モデルCSVの読み込みに失敗しました: ${error.message}`;
+      }
+    });
+
+    searchInput.addEventListener("input", renderTable);
+    categoryFilter.addEventListener("change", renderTable);
+    updateModelToggles();
+    renderTable();
+  </script>
+</body>
+</html>

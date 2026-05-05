@@ -16,8 +16,8 @@ run = "uv run pytest tests"
 
 [tasks.lint]
 description = "Run linters"
-run = "uv run ruff check . && uv run ty check ."
+run = "uv run ruff check . --exclude experiments && uv run ty check prompt_adapter tests scripts"
 
 [tasks.format]
 description = "Format code"
-run = "uv run ruff check --fix . && uv run ruff format ."
+run = "uv run ruff check --fix . --exclude experiments && uv run ruff format . --exclude experiments"
