@@ -1,7 +1,0 @@
-model_alias,provider_type,connection_name,model_name,api_version_override,litellm_mode,temperature,max_tokens,enabled,notes
-gpt5mini_openai,openai,openai_main,gpt-5-mini,,completion,,,true,OpenAI GPT-5 mini
-gpt41_openai,openai,openai_main,gpt-4.1,,completion,,,true,OpenAI GPT-4.1
-gpt4o_azure,azure_openai,aoai_main,gpt-4o-deploy,,completion,,,true,Azure deployment name
-gpt5mini_azure,azure_openai,aoai_main,gpt-5-mini-deploy,,completion,,,true,Azure GPT-5 deployment
-command_r_foundry,microsoft_foundry,foundry_main,command-r-plus,,completion,,,true,Cohere model on Foundry
-mistral_large_foundry,microsoft_foundry,foundry_main,mistral-large-latest,,completion,,,true,Mistral model on Foundry

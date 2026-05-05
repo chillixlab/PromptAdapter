@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from prompt_adapter.ai_model_runner import (
+    AIModelCallMode,
     AIModelConfig,
     AIModelProvider,
     CsvConnectionRepository,
@@ -13,7 +14,7 @@ FIXTURE_DIR = Path(__file__).resolve().parent.parent / "instance"
 def test_OpenAI向けのリクエスト引数を組み立てられる() -> None:
     # Given: OpenAI用の接続設定とモデル設定、リクエストビルダーを用意する
     connection_repository = CsvConnectionRepository(
-        FIXTURE_DIR / "model_connections.example.csv"
+        FIXTURE_DIR / "model_connections.example.json"
     )
     connection = connection_repository.get("openai_main").to_domain()
     builder = LiteLLMRequestBuilder()
@@ -39,7 +40,7 @@ def test_OpenAI向けのリクエスト引数を組み立てられる() -> None:
 def test_AzureOpenAI向けのリクエスト引数を組み立てられる() -> None:
     # Given: Azure OpenAI用の接続設定とモデル設定、リクエストビルダーを用意する
     connection_repository = CsvConnectionRepository(
-        FIXTURE_DIR / "model_connections.example.csv"
+        FIXTURE_DIR / "model_connections.example.json"
     )
     connection = connection_repository.get("aoai_main").to_domain()
     builder = LiteLLMRequestBuilder()
@@ -64,7 +65,7 @@ def test_AzureOpenAI向けのリクエスト引数を組み立てられる() -> 
 def test_Foundry向けのリクエスト引数を組み立てられる() -> None:
     # Given: Foundry用の接続設定とモデル設定、リクエストビルダーを用意する
     connection_repository = CsvConnectionRepository(
-        FIXTURE_DIR / "model_connections.example.csv"
+        FIXTURE_DIR / "model_connections.example.json"
     )
     connection = connection_repository.get("foundry_main").to_domain()
     builder = LiteLLMRequestBuilder()
@@ -84,3 +85,32 @@ def test_Foundry向けのリクエスト引数を組み立てられる() -> None
     assert request["model"] == "azure_ai/command-r-plus"
     assert request["api_base"] == "https://your-project.inference.ai.azure.com/"
     assert "api_version" not in request
+
+
+def test_Responsesモード向けのリクエスト引数を組み立てられる() -> None:
+    # Given: OpenAI用の接続設定とresponsesモードのモデル設定を用意する
+    connection_repository = CsvConnectionRepository(
+        FIXTURE_DIR / "model_connections.example.json"
+    )
+    connection = connection_repository.get("openai_main").to_domain()
+    builder = LiteLLMRequestBuilder()
+    model_config = AIModelConfig(
+        model_name="gpt-4.1",
+        provider_type=AIModelProvider.OPENAI,
+        litellm_mode=AIModelCallMode.RESPONSES,
+        max_tokens=128,
+    )
+
+    # When: responsesモード向けのLiteLLMリクエスト引数を組み立てる
+    request = builder.build(
+        model_config=model_config,
+        connection=connection,
+        messages=[{"role": "user", "content": "hello"}],
+    )
+
+    # Then: messagesがinputへ変換されmax_tokensがmax_output_tokensへ変換される
+    assert request["model"] == "gpt-4.1"
+    assert request["input"] == [{"role": "user", "content": "hello"}]
+    assert "messages" not in request
+    assert request["max_output_tokens"] == 128
+    assert "max_tokens" not in request

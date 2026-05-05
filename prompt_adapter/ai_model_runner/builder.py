@@ -1,6 +1,7 @@
 from typing import Any
 
 from prompt_adapter.ai_model_runner.domain import (
+    AIModelCallMode,
     AIModelConfig,
     AIModelConnection,
     AIModelProvider,
@@ -17,7 +18,7 @@ class LiteLLMRequestBuilder:
         messages: list[dict[str, Any]],
         **kwargs: Any,
     ) -> dict[str, Any]:
-        """provider差分を吸収して`litellm.completion()`用kwargsを返す。
+        """provider差分を吸収してLiteLLM呼び出し用kwargsを返す。
 
         Parameters
         ----------
@@ -71,4 +72,15 @@ class LiteLLMRequestBuilder:
 
         request_kwargs.update(model_config.litellm_model_params)
         request_kwargs.update(kwargs)
+
+        if model_config.litellm_mode == AIModelCallMode.RESPONSES:
+            messages_input = request_kwargs.pop("messages")
+            if "input" not in request_kwargs:
+                request_kwargs["input"] = messages_input
+            if (
+                "max_output_tokens" not in request_kwargs
+                and "max_tokens" in request_kwargs
+            ):
+                request_kwargs["max_output_tokens"] = request_kwargs.pop("max_tokens")
+
         return request_kwargs

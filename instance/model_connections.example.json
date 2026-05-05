@@ -1,0 +1,46 @@
+[
+  {
+    "connection_name": "openai_main",
+    "provider_type": "openai",
+    "api_key": "sk-your-openai-api-key",
+    "api_base": null,
+    "api_version": null,
+    "organization": null,
+    "is_default": true,
+    "enabled": true,
+    "notes": "Default OpenAI connection"
+  },
+  {
+    "connection_name": "aoai_main",
+    "provider_type": "azure_openai",
+    "api_key": "azure-openai-api-key",
+    "api_base": "https://your-resource.openai.azure.com/",
+    "api_version": "2024-08-01-preview",
+    "organization": null,
+    "is_default": true,
+    "enabled": true,
+    "notes": "Default Azure OpenAI connection"
+  },
+  {
+    "connection_name": "foundry_main",
+    "provider_type": "microsoft_foundry",
+    "api_key": "azure-ai-foundry-api-key",
+    "api_base": "https://your-project.inference.ai.azure.com/",
+    "api_version": null,
+    "organization": null,
+    "is_default": true,
+    "enabled": true,
+    "notes": "Default Azure AI Foundry connection"
+  },
+  {
+    "connection_name": "openai_proxy",
+    "provider_type": "openai",
+    "api_key": "sk-your-openai-proxy-key",
+    "api_base": "https://your-proxy.example.com/v1",
+    "api_version": null,
+    "organization": "your-org",
+    "is_default": false,
+    "enabled": false,
+    "notes": "Optional OpenAI proxy"
+  }
+]
