@@ -61,8 +61,7 @@ def test_system_prompt列がない生成結果CSVでは例外になること(tmp
     # GIVEN: system_prompt列を持たない生成結果CSVを用意する
     llm_result_file = tmp_path / "llm_result_jaquad_dev_0000_gpt-4.1.csv"
     llm_result_file.write_text(
-        "question_id,context_id,answer\n"
-        "1,1,奈良\n",
+        "question_id,context_id,answer\n1,1,奈良\n",
         encoding="utf-8",
     )
 
@@ -94,8 +93,7 @@ def test_生成結果CSVに不足行がある場合は例外になること(tmp_
     )
     llm_result_file = tmp_path / "llm_result_jaquad_dev_0000_gpt-4.1.csv"
     llm_result_file.write_text(
-        "question_id,context_id,answer,system_prompt\n"
-        "1,1,奈良,簡潔に答えてください\n",
+        "question_id,context_id,answer,system_prompt\n1,1,奈良,簡潔に答えてください\n",
         encoding="utf-8",
     )
     evaluator = JaQuADEvaluator()

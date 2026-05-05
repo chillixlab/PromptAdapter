@@ -47,8 +47,8 @@ class Evaluator:
         langchain_embeddings = AzureOpenAIEmbeddings(
             model=self.settings.azure_embedding_deployment_name,
             azure_endpoint=self.settings.azure_openai_endpoint,
-            openai_api_key=SecretStr(self.settings.azure_openai_api_key),
-            openai_api_version=self.settings.azure_openai_api_version,
+            api_key=SecretStr(self.settings.azure_openai_api_key),
+            api_version=self.settings.azure_openai_api_version,
         )
 
         # RAGASのLangchainEmbeddingsWrapperでラップ
