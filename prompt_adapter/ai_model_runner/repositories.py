@@ -1,10 +1,11 @@
-import csv
+import json
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 
 from prompt_adapter.ai_model_runner.domain import (
+    AIModelCallMode,
     AIModelConfig,
     AIModelConnection,
     AIModelProvider,
@@ -20,11 +21,11 @@ class ModelDefinitionNotFoundError(LookupError):
 
 
 class CsvConnectionRecord(BaseModel):
-    """接続先CSVの1行を表すリポジトリ用スキーマ。
+    """接続先JSONの1件を表すリポジトリ用スキーマ。
 
     Notes
     -----
-    CSVとの入出力に閉じたスキーマであり、アプリケーション本体では
+    JSONとの入出力に閉じたスキーマであり、アプリケーション本体では
     `AIModelConnection` に変換した結果を扱う。
     """
 
@@ -35,7 +36,7 @@ class CsvConnectionRecord(BaseModel):
     ]
     api_key: Annotated[
         SecretStr,
-        Field(title="APIキー", description="CSVに保存されたAPIキー"),
+        Field(title="APIキー", description="JSONに保存されたAPIキー"),
     ]
     api_base: Annotated[
         str | None,
@@ -65,12 +66,12 @@ class CsvConnectionRecord(BaseModel):
     @field_validator("api_base", "api_version", "organization", "notes", mode="before")
     @classmethod
     def empty_string_to_none(cls, value: str | None) -> str | None:
-        """CSV由来の空文字を`None`へ正規化する。
+        """JSON由来の空文字を`None`へ正規化する。
 
         Parameters
         ----------
         value : str | None
-            CSVから読み込んだ値。
+            JSONから読み込んだ値。
 
         Returns
         -------
@@ -104,7 +105,7 @@ class CsvConnectionRecord(BaseModel):
         return self
 
     def to_domain(self) -> AIModelConnection:
-        """CSVレコードをドメインモデルへ変換する。
+        """JSONレコードをドメインモデルへ変換する。
 
         Returns
         -------
@@ -125,7 +126,7 @@ class CsvConnectionRecord(BaseModel):
 
 
 class CsvModelRecord(BaseModel):
-    """モデル定義CSVの1行を表すリポジトリ用スキーマ。"""
+    """モデル定義JSONの1件を表すリポジトリ用スキーマ。"""
 
     model_alias: Annotated[
         str, Field(title="モデル別名", description="アプリケーションから参照する論理名")
@@ -151,9 +152,9 @@ class CsvModelRecord(BaseModel):
         ),
     ] = None
     litellm_mode: Annotated[
-        str,
+        AIModelCallMode,
         Field(
-            default="completion",
+            default=AIModelCallMode.COMPLETION,
             title="LiteLLMモード",
             description="LiteLLMで使用するモード",
         ),
@@ -180,12 +181,12 @@ class CsvModelRecord(BaseModel):
     )
     @classmethod
     def empty_optional_values_to_none(cls, value: str | None) -> str | None:
-        """CSV上の空文字を任意項目の`None`として扱う。
+        """JSON上の空文字を任意項目の`None`として扱う。
 
         Parameters
         ----------
         value : str | None
-            CSVから読み込んだ値。
+            JSONから読み込んだ値。
 
         Returns
         -------
@@ -197,12 +198,12 @@ class CsvModelRecord(BaseModel):
         return value
 
     def to_domain(self) -> AIModelConfig:
-        """CSVレコードを実行用モデル設定へ変換する。
+        """JSONレコードを実行用モデル設定へ変換する。
 
         Returns
         -------
         AIModelConfig
-            `LiteLLMRunner` がそのまま利用できる実行用設定。
+            `LiteLLMClient` がそのまま利用できる実行用設定。
         """
         return AIModelConfig(
             model_name=self.model_name,
@@ -211,44 +212,74 @@ class CsvModelRecord(BaseModel):
             api_version=self.api_version_override,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
+            litellm_mode=self.litellm_mode,
         )
 
 
-def _read_csv_rows(file_path: str | Path) -> list[dict[str, str]]:
-    """CSVファイルを辞書のリストとして読み込む。
+def _read_rows(file_path: str | Path) -> list[dict[str, object]]:
+    """JSONファイルを辞書リストとして読み込む。
 
     Parameters
     ----------
     file_path : str | Path
-        読み込むCSVファイルのパス。
+        読み込むJSONファイルのパス。
 
     Returns
     -------
-    list[dict[str, str]]
+    list[dict[str, object]]
         1行を1辞書として表現した行データ一覧。
+
+    Raises
+    ------
+    ValueError
+        JSON構造が不正、または拡張子が`.json`でない場合。
     """
     path = Path(file_path)
-    with path.open(newline="", encoding="utf-8") as csv_file:
-        reader = csv.DictReader(csv_file)
-        return [dict(row) for row in reader]
+    suffix = path.suffix.lower()
+
+    if suffix == ".json":
+        with path.open(encoding="utf-8") as json_file:
+            rows = json.load(json_file)
+        if not isinstance(rows, list):
+            raise ValueError("JSONファイルは配列形式である必要があります")
+        validated_rows: list[dict[str, object]] = []
+        for index, row in enumerate(rows):
+            if not isinstance(row, dict):
+                raise ValueError(
+                    f"JSONファイルの{index + 1}件目がオブジェクト形式ではありません"
+                )
+            validated_rows.append(cast(dict[str, object], row))
+        return validated_rows
+
+    raise ValueError("接続・モデル定義ファイルは .json のみ対応しています")
+
+
+def _is_enabled(row: dict[str, object]) -> bool:
+    """enabled値を真偽値として解釈する。"""
+    enabled_value = row.get("enabled", True)
+    if isinstance(enabled_value, bool):
+        return enabled_value
+    if enabled_value is None:
+        return True
+    return str(enabled_value).strip().lower() != "false"
 
 
 class CsvConnectionRepository:
-    """接続先CSVから有効な接続定義を読み込むリポジトリ。"""
+    """接続先JSONから有効な接続定義を読み込むリポジトリ。"""
 
     def __init__(self, file_path: str | Path):
-        """接続先CSVを読み込み、利用可能な接続一覧を保持する。
+        """接続先JSONを読み込み、利用可能な接続一覧を保持する。
 
         Parameters
         ----------
         file_path : str | Path
-            接続定義CSVのパス。
+            接続定義JSONのパス。
         """
         self.file_path = Path(file_path)
         self._connections = [
             CsvConnectionRecord.model_validate(row)
-            for row in _read_csv_rows(self.file_path)
-            if row.get("enabled", "true").strip().lower() != "false"
+            for row in _read_rows(self.file_path)
+            if _is_enabled(row)
         ]
 
     def list_all(self) -> list[CsvConnectionRecord]:
@@ -313,21 +344,21 @@ class CsvConnectionRepository:
 
 
 class CsvModelRepository:
-    """モデル定義CSVから有効なモデル一覧を読み込むリポジトリ。"""
+    """モデル定義JSONから有効なモデル一覧を読み込むリポジトリ。"""
 
     def __init__(self, file_path: str | Path):
-        """モデル定義CSVを読み込み、利用可能なモデル一覧を保持する。
+        """モデル定義JSONを読み込み、利用可能なモデル一覧を保持する。
 
         Parameters
         ----------
         file_path : str | Path
-            モデル定義CSVのパス。
+            モデル定義JSONのパス。
         """
         self.file_path = Path(file_path)
         self._models = [
             CsvModelRecord.model_validate(row)
-            for row in _read_csv_rows(self.file_path)
-            if row.get("enabled", "true").strip().lower() != "false"
+            for row in _read_rows(self.file_path)
+            if _is_enabled(row)
         ]
 
     def list_all(self) -> list[CsvModelRecord]:

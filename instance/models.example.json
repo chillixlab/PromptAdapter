@@ -1,0 +1,74 @@
+[
+  {
+    "model_alias": "gpt5mini_openai",
+    "provider_type": "openai",
+    "connection_name": "openai_main",
+    "model_name": "gpt-5-mini",
+    "api_version_override": null,
+    "litellm_mode": "completion",
+    "temperature": null,
+    "max_tokens": null,
+    "enabled": true,
+    "notes": "OpenAI GPT-5 mini"
+  },
+  {
+    "model_alias": "gpt41_openai",
+    "provider_type": "openai",
+    "connection_name": "openai_main",
+    "model_name": "gpt-4.1",
+    "api_version_override": null,
+    "litellm_mode": "responses",
+    "temperature": null,
+    "max_tokens": null,
+    "enabled": true,
+    "notes": "OpenAI GPT-4.1 (responses mode)"
+  },
+  {
+    "model_alias": "gpt4o_azure",
+    "provider_type": "azure_openai",
+    "connection_name": "aoai_main",
+    "model_name": "gpt-4o-deploy",
+    "api_version_override": null,
+    "litellm_mode": "completion",
+    "temperature": null,
+    "max_tokens": null,
+    "enabled": true,
+    "notes": "Azure deployment name"
+  },
+  {
+    "model_alias": "gpt5mini_azure",
+    "provider_type": "azure_openai",
+    "connection_name": "aoai_main",
+    "model_name": "gpt-5-mini-deploy",
+    "api_version_override": null,
+    "litellm_mode": "completion",
+    "temperature": null,
+    "max_tokens": null,
+    "enabled": true,
+    "notes": "Azure GPT-5 deployment"
+  },
+  {
+    "model_alias": "command_r_foundry",
+    "provider_type": "microsoft_foundry",
+    "connection_name": "foundry_main",
+    "model_name": "command-r-plus",
+    "api_version_override": null,
+    "litellm_mode": "completion",
+    "temperature": null,
+    "max_tokens": null,
+    "enabled": true,
+    "notes": "Cohere model on Foundry"
+  },
+  {
+    "model_alias": "mistral_large_foundry",
+    "provider_type": "microsoft_foundry",
+    "connection_name": "foundry_main",
+    "model_name": "mistral-large-latest",
+    "api_version_override": null,
+    "litellm_mode": "completion",
+    "temperature": null,
+    "max_tokens": null,
+    "enabled": true,
+    "notes": "Mistral model on Foundry"
+  }
+]

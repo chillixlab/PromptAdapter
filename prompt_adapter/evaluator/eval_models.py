@@ -123,7 +123,10 @@ class JaQuADLLMResultRecord(BaseModel):
     ]
     system_prompt: Annotated[
         str,
-        Field(title="システムプロンプト", description="回答生成時に使用したシステムプロンプト",),
+        Field(
+            title="システムプロンプト",
+            description="回答生成時に使用したシステムプロンプト",
+        ),
     ]
 
 
@@ -157,7 +160,10 @@ class JaQuADEvaluationResult(BaseModel):
     ]
     source_dataset_file: Annotated[
         str,
-        Field(title="元データセットCSV名", description="評価元のデータセット CSV ファイル名"),
+        Field(
+            title="元データセットCSV名",
+            description="評価元のデータセット CSV ファイル名",
+        ),
     ]
     source_llm_result_file: Annotated[
         str,

@@ -1,5 +1,0 @@
-connection_name,provider_type,api_key,api_base,api_version,organization,is_default,enabled,notes
-openai_main,openai,sk-your-openai-api-key,,,,true,true,Default OpenAI connection
-aoai_main,azure_openai,azure-openai-api-key,https://your-resource.openai.azure.com/,2024-08-01-preview,,true,true,Default Azure OpenAI connection
-foundry_main,microsoft_foundry,azure-ai-foundry-api-key,https://your-project.inference.ai.azure.com/,,,true,true,Default Azure AI Foundry connection
-openai_proxy,openai,sk-your-openai-proxy-key,https://your-proxy.example.com/v1,,your-org,false,false,Optional OpenAI proxy

@@ -53,17 +53,23 @@ class JaQuADEvaluator:
             raise ValueError("JaQuAD の評価対象データセットが存在しません")
 
         dataset_record_map = {
-            (record.question_id, record.context_id): record for record in dataset_records
+            (record.question_id, record.context_id): record
+            for record in dataset_records
         }
         llm_result_record_map = {
-            (record.question_id, record.context_id): record for record in llm_result_records
+            (record.question_id, record.context_id): record
+            for record in llm_result_records
         }
 
         if len(dataset_record_map) != len(dataset_records):
-            raise ValueError("データセット CSV に重複した question_id と context_id の組み合わせがあります")
+            raise ValueError(
+                "データセット CSV に重複した question_id と context_id の組み合わせがあります"
+            )
 
         if len(llm_result_record_map) != len(llm_result_records):
-            raise ValueError("生成結果 CSV に重複した question_id と context_id の組み合わせがあります")
+            raise ValueError(
+                "生成結果 CSV に重複した question_id と context_id の組み合わせがあります"
+            )
 
         correct_count = 0
         incorrect_count = 0
@@ -76,10 +82,9 @@ class JaQuADEvaluator:
                 )
 
             # 正規化して想定回答とあっているかを確認する
-            is_exact_match = (
-                self._normalize_answer(llm_record.answer)
-                == self._normalize_answer(dataset_record.answer)
-            )
+            is_exact_match = self._normalize_answer(
+                llm_record.answer
+            ) == self._normalize_answer(dataset_record.answer)
             if is_exact_match:
                 correct_count += 1
             else:

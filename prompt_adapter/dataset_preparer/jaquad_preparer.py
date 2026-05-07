@@ -62,7 +62,9 @@ class JaQuADPreparer:
 
                 qa_df = pd.DataFrame(rows)
 
-                output_path = os.path.join(output_folder, item["name"].replace(".json", ".csv"))
+                output_path = os.path.join(
+                    output_folder, item["name"].replace(".json", ".csv")
+                )
 
                 qa_df.to_csv(output_path, index=False)
                 logger.info(f"CSV保存: {output_path}")

@@ -40,6 +40,13 @@ class AIModelProvider(StrEnum):
                 return f"azure_ai/{model_name}"
 
 
+class AIModelCallMode(StrEnum):
+    """LiteLLM呼び出しモード。"""
+
+    COMPLETION = "completion"
+    RESPONSES = "responses"
+
+
 class AIModelConfig(BaseModel):
     """実行時に使用するAIモデル設定。
 
@@ -72,6 +79,10 @@ class AIModelConfig(BaseModel):
         int | None,
         Field(title="max_tokens", description="最大トークン数"),
     ] = None
+    litellm_mode: Annotated[
+        AIModelCallMode,
+        Field(title="LiteLLMモード", description="LiteLLMで使用する実行モード"),
+    ] = AIModelCallMode.COMPLETION
 
     @property
     def litellm_model_name(self) -> str:
